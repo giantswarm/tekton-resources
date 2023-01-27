@@ -46,6 +46,7 @@ metadata:
   annotations:
     kubernetes.io/tls-acme: "true"
 spec:
+  ingressClassName: nginx
   rules:
     - host: tekton.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io
       http:
