@@ -12,7 +12,8 @@ resources:
 - https://github.com/tektoncd/triggers/releases/download/v0.22.1/interceptors.yaml
 - https://github.com/tektoncd/dashboard/releases/download/v0.32.0/release.yaml
 - resources/dashboard-ingress.yaml
-- resources/dashboard-extensions.yaml
+- resources/dashboard-extensions-base.yaml
+- resources/dashboard-extensions-cronjobs.yaml
 - resources/psps.yaml
 
 patchesStrategicMerge:

@@ -31,4 +31,4 @@ rules:
   - apiGroups: ["batch"]
     resources: ["cronjobs"]
     verbs: ["get", "list"]
-s
+
