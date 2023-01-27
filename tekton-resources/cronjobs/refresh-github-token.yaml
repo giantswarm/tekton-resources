@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: refresh-github-token-cronjob
-  namespace: tekton-ci
+  namespace: tekton-pipelines
 spec:
   schedule: "20 * * * *"
   concurrencyPolicy: Forbid
@@ -14,7 +14,7 @@ spec:
           - name: regcred
           serviceAccountName: build-bot
           containers:
-          - name: refresh-github-token      
+          - name: refresh-github-token
             env:
             - name: app_private_key
               valueFrom:
