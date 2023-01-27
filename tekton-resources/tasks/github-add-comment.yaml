@@ -1,0 +1,97 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: gh-api-add-comment
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: comment, github
+    tekton.dev/displayName: "add github comment"
+spec:
+  description: "Adds a comment to a GitHub pull request or issue"
+
+  params:
+  # Required
+  - name: COMMENT_MESSAGE
+    type: string
+    description: The contents of the message to add as a comment.
+
+  - name: PR_ISSUE_NUMBER
+    type: string
+    description: The ID of the issue or pull request to comment on
+
+  - name: REPO
+    type: string
+    description: The repository the issue or PR belogs to in the format `organisation/repo-name`.
+
+  # Optional
+  - name: REPLACE_TOKEN
+    type: string
+    description: A unique (hidden) token to match against to allow updating existing comments.
+    default: ""
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/tinkerers-ci:latest"
+
+  - name: GITHUB_TOKEN_SECRET
+    type: string
+    description: The name of the secret containing the GitHub authentication credentials.
+    default: tekton-ci-github-token
+
+  steps:
+    - name: gh-api-add-comment
+      image: $(params.IMAGE)
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.GITHUB_TOKEN_SECRET)
+              key: GITHUB_TOKEN
+        - name: COMMENT_MESSAGE
+          value: $(params.COMMENT_MESSAGE)
+        - name: PR_ISSUE_NUMBER
+          value: $(params.PR_ISSUE_NUMBER)
+        - name: REPO
+          value: $(params.REPO)
+        - name: REPLACE_TOKEN
+          value: $(params.REPLACE_TOKEN)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        set -x
+
+        if [[ ! -z "$(params.REPLACE_TOKEN)" ]]; then
+          # Include the replacement token as a hidden comment in the message body
+          COMMENT_MESSAGE="${COMMENT_MESSAGE}\n<!-- $(params.REPLACE_TOKEN) -->"
+
+          # Attempting to update existing comment
+
+          EXISTING_COMMENT_URL=$(gh api \
+            --method GET \
+            -H "Accept: application/vnd.github+json" \
+            /repos/giantswarm/giantswarm/issues/6326/comments \
+            --paginate \
+            | jq -s 'add' \
+            | jq -r '.[] | select(.body | test("$(params.REPLACE_TOKEN)")) | .url' \
+            )
+          if [[ ! -z "${EXISTING_COMMENT_URL}" ]]; then
+            # Updating existing comment
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              ${EXISTING_COMMENT_URL} \
+              -f body="${COMMENT_MESSAGE}"
+
+            # We're done, exiting
+            exit 0
+          fi
+        fi
+
+        # Adding new comment
+        gh api \
+          --method POST \
+          -H "Accept: application/vnd.github+json" \
+          /repos/${REPO}/issues/${PR_ISSUE_NUMBER}/comments \
+          -f body="${COMMENT_MESSAGE}"
+

@@ -1,0 +1,77 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildkit-daemonless
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: image-build, docker
+    tekton.dev/displayName: "buildkit daemonless"
+spec:
+  description: >-
+    This Task builds source into a container image using Moby BuildKit.
+    This buildkit-daemonless Task is similar to buildkit but does not need
+    creating Secret, Deployment, and Service resources for setting up the
+    buildkitd daemon cluster.
+
+  params:
+  # Required
+  - name: IMAGE
+    type: string
+    description: The image name and output
+
+  # Optional
+  - name: DOCKERFILE
+    type: string
+    description: The name of the Dockerfile
+    default: "Dockerfile"
+
+  - name: INSECURE
+    type: string
+    description: Use an insecure container registry
+    default: "false"
+
+  - name: BUILDKIT_IMAGE
+    type: string
+    description: The name of the BuildKit image
+    # The image needs to be rootful because Tekton creates /builder/home/.docker/config.json owned by root:root with 0600
+    # https://github.com/tektoncd/pipeline/issues/852
+    default: "moby/buildkit:latest"
+
+  - name: DOCKER_CONFIG_SECRET_NAME
+    type: string
+    description: The name of the secret containing the docker config json
+    default: regcred
+
+  workspaces:
+  - name: source
+
+  steps:
+  - name: build-and-push
+    image: $(params.BUILDKIT_IMAGE)
+    workingDir: $(workspaces.source.path)/
+    securityContext:
+      privileged: true
+    env:
+    - name: dockerconfig
+      valueFrom:
+        secretKeyRef:
+          name: $(params.DOCKER_CONFIG_SECRET_NAME)
+          key: .dockerconfigjson
+    - name: DOCKER_CONFIG
+      value: /root/.docker/
+    script: |
+      #!/usr/bin/env sh
+      set -e
+      set -x
+
+      mkdir -p ${DOCKER_CONFIG}
+      echo ${dockerconfig} > ${DOCKER_CONFIG}/config.json
+
+      buildctl-daemonless.sh --debug \
+              build \
+              --progress=plain \
+              --frontend=dockerfile.v0 \
+              --opt filename=$(params.DOCKERFILE) \
+              --local context=. --local dockerfile=. \
+              --output type=image,name=$(params.IMAGE),push=true,registry.insecure=$(params.INSECURE)

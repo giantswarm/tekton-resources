@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+- pairs:
+    application.giantswarm.io/team: team-tinkerers
+  includeTemplates: true
+
+resources:
+- https://github.com/tektoncd/pipeline/releases/download/v0.44.0/release.yaml
+- https://github.com/tektoncd/triggers/releases/download/v0.22.1/release.yaml
+- https://github.com/tektoncd/triggers/releases/download/v0.22.1/interceptors.yaml
+- https://github.com/tektoncd/dashboard/releases/download/v0.32.0/release.yaml
+- resources/dashboard-ingress.yaml
+- resources/dashboard-extensions.yaml
+
+patchesStrategicMerge:
+- patches/tekton-pipelines.yaml

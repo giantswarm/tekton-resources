@@ -1,0 +1,26 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: refresh-github-token-cronjob
+  namespace: tekton-ci
+spec:
+  schedule: "20 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          imagePullSecrets:
+          - name: regcred
+          serviceAccountName: build-bot
+          containers:
+          - name: refresh-github-token      
+            env:
+            - name: app_private_key
+              valueFrom:
+                secretKeyRef:
+                  name: tinkerers-ci-pem
+                  key: GITHUB_PEM
+            image: quay.io/giantswarm/tinkerers-ci:latest
+            args: ["scripts/refresh-github-token.sh"]
+          restartPolicy: Never
