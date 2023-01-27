@@ -13,6 +13,7 @@ resources:
 - https://github.com/tektoncd/dashboard/releases/download/v0.32.0/release.yaml
 - resources/dashboard-ingress.yaml
 - resources/dashboard-extensions.yaml
+- resources/psps.yaml
 
 patchesStrategicMerge:
 - patches/tekton-pipelines.yaml
