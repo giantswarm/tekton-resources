@@ -23,3 +23,17 @@ resources:
 
 patchesStrategicMerge:
 - patches/tekton-pipelines.yaml
+
+patchesJson6902:
+- patch: |-
+    - op: remove
+      path: "/metadata/labels/pod-security.kubernetes.io~1enforce"
+  target:
+    kind: Namespace
+    name: tekton-pipelines
+- patch: |-
+    - op: remove
+      path: "/metadata/labels/pod-security.kubernetes.io~1enforce"
+  target:
+    kind: Namespace
+    name: tekton-pipelines-resolvers
