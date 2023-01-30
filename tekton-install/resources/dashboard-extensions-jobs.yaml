@@ -1,7 +1,7 @@
 apiVersion: dashboard.tekton.dev/v1alpha1
 kind: Extension
 metadata:
-  name: cronjobs
+  name: jobs
   namespace: tekton-pipelines
   labels:
     app: tekton-dashboard
@@ -11,15 +11,15 @@ metadata:
     app.kubernetes.io/part-of: tekton-dashboard
 spec:
   apiVersion: batch/v1
-  name: cronjobs
-  displayname: CronJobs
+  name: jobs
+  displayname: Jobs
 
 ---
 
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: tekton-dashboard-cronjobs-extension
+  name: tekton-dashboard-jobs-extension
   labels:
     rbac.dashboard.tekton.dev/aggregate-to-dashboard: "true"
     app: tekton-dashboard
@@ -29,6 +29,6 @@ metadata:
     app.kubernetes.io/part-of: tekton-dashboard
 rules:
   - apiGroups: ["batch"]
-    resources: ["cronjobs"]
+    resources: ["jobs"]
     verbs: ["get", "list"]
 
