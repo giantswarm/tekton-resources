@@ -19,6 +19,7 @@ resources:
 - resources/dashboard-ingress.yaml
 - resources/dashboard-extensions-base.yaml
 - resources/dashboard-extensions-cronjobs.yaml
+- resources/dashboard-extensions-jobs.yaml
 - resources/psps.yaml
 
 patchesStrategicMerge:
