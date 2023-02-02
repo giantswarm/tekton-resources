@@ -1,0 +1,41 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-automatic-pr
+  labels:
+    app: tekton-resources
+    app.kubernetes.io/name: tekton-resources
+    app.kubernetes.io/component: trigger-event-listener
+    app.kubernetes.io/instance: github-automatic-pr
+    app.kubernetes.io/part-of: tekton-triggers
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: github, pull request
+spec:
+  triggers:
+    - name: github-automatic-pr
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["pull_request"]
+            - name: "addChangedFiles"
+              value:
+                enabled: true
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+        - ref:
+            name: cel
+          params:
+          - name: filter
+            value: "body.action in ['opened', 'synchronize', 'reopened']"
+      bindings:
+        - ref: github-pr
+          kind: ClusterTriggerBinding
+      template:
+        ref: github-automatic-pr
+
+---
