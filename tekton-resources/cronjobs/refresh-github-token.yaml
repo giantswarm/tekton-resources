@@ -59,9 +59,9 @@ spec:
                   name: tinkerers-ci-pem
                   key: GITHUB_PEM
             - name: app_id
-              value: 284804
+              value: "284804"
             - name: installation_id
-              value: 33432247
+              value: "33432247"
             image: quay.io/giantswarm/tinkerers-ci:latest
             args: ["scripts/refresh-token.sh"]
           restartPolicy: Never
