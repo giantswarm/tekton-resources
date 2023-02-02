@@ -1,0 +1,128 @@
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-pr
+  labels:
+    app: tekton-resources
+    app.kubernetes.io/name: tekton-resources
+    app.kubernetes.io/component: trigger-event-listener
+    app.kubernetes.io/instance: github-pr
+    app.kubernetes.io/part-of: tekton-triggers
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: github, pull request
+spec:
+  triggers:
+    # Triggered when PRs are opened, reopened or sync'd with target namespace
+    - name: github-pr
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["pull_request"]
+            - name: "addChangedFiles"
+              value:
+                enabled: true
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+        - ref:
+            name: cel
+          params:
+          - name: filter
+            value: "body.action in ['opened', 'synchronize', 'reopened']"
+      bindings:
+        - ref: github-pr
+          kind: ClusterTriggerBinding
+      template:
+        ref: github-automatic-pr
+
+    # Triggered when a comment containing `/run` is made on a PR
+    - name: github-pr-comment
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["issue_comment"]
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+        - ref:
+            name: cel
+          params:
+          - name: filter
+            value: "body.action in ['created', 'edited']"
+          - name: filter
+            value: "body.comment.body.substring('/run')"
+      bindings:
+        - ref: github-pr
+          kind: ClusterTriggerBinding
+        - ref: github-comment
+          kind: ClusterTriggerBinding
+      template:
+        ref: github-pr-comment
+
+    # Triggered when a PR is opened containing `/run` in the main body
+    - name: github-pr-opened-comment
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["pull_request"]
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+        - ref:
+            name: cel
+          params:
+          - name: filter
+            value: "body.action in ['opened']"
+          - name: filter
+            value: "body.pull_request.body.substring('/run')"
+      bindings:
+        - ref: github-pr
+          kind: ClusterTriggerBinding
+        # "fake" a comment from the PR body text
+        - name: COMMENT
+          value: $(body.pull_request.body)
+      template:
+        ref: github-pr-comment
+
+    # Triggered when a PR is edited to now contain `/run` in the main body when it didn't previously
+    - name: github-pr-edited-comment
+      interceptors:
+        - ref:
+            name: "github"
+          params:
+            - name: "eventTypes"
+              value: ["pull_request"]
+            - name: "secretRef"
+              value:
+                secretName: github-webhook-secret
+                secretKey: token
+        - ref:
+            name: cel
+          params:
+          - name: filter
+            value: "body.action in ['edited']"
+          - name: filter
+            value: "body.pull_request.body.substring('/run')"
+          - name: filter
+            value: "has(body.changes) && has(body.changes.body) && body.changes.body.from.substring('/run') < 0"
+      bindings:
+        - ref: github-pr
+          kind: ClusterTriggerBinding
+        # "fake" a comment from the PR body text
+        - name: COMMENT
+          value: $(body.pull_request.body)
+        - name: PREVIOUS_COMMENT
+          value: $(has(body.changes) && has(body.changes.body) && body.changes.body.from.)
+      template:
+        ref: github-pr-comment
+---

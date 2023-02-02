@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tekton-el-github-pr
+  labels:
+    app: tekton-resources
+    app.kubernetes.io/name: tekton-resources
+    app.kubernetes.io/component: trigger-event-listener
+    app.kubernetes.io/instance: github-pr
+    app.kubernetes.io/part-of: tekton-triggers
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: github-pr-webhook.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: el-github-pr
+                port:
+              name: http-listener
+  tls:
+    - hosts:
+        - github-pr-webhook.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io
+      secretName: tekton-el-github-pr
+---
