@@ -33,3 +33,27 @@ spec:
     - name: MERGEABLE_STATE
       value: $(body.pull_request.mergeable_state)
 ---
+
+apiVersion: triggers.tekton.dev/v1beta1
+kind: ClusterTriggerBinding
+metadata:
+  name: github-comment
+  labels:
+    app: tekton-resources
+    app.kubernetes.io/name: tekton-resources
+    app.kubernetes.io/instance: github-comment
+    app.kubernetes.io/part-of: tekton-triggers
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: github, pull request, comment
+spec:
+  params:
+    - name: COMMENT
+      value: $(body.comment.body)
+    - name: PREVIOUS_COMMENT
+      value: $(has(body.changes) && has(body.changes.body) && body.changes.body.from)
+    - name: COMMENT_ID
+      value: $(body.comment.id)
+    - name: COMMENT_URL
+      value: $(body.comment.url)
+---
