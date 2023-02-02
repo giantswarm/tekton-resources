@@ -24,7 +24,7 @@ spec:
               service:
                 name: el-github-pr
                 port:
-              name: http-listener
+                  name: http-listener
   tls:
     - hosts:
         - github-pr-webhook.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io
