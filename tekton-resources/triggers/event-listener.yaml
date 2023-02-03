@@ -12,6 +12,7 @@ metadata:
   annotations:
     tekton.dev/tags: github, pull request
 spec:
+  serviceAccountName: triggers-eventlistener
   triggers:
     # Triggered when PRs are opened, reopened or sync'd with target namespace
     - name: github-pr
