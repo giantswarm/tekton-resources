@@ -71,4 +71,5 @@ spec:
           description: |
             Checks a PR comment for trigger text and create new pipeline runs for each
           steps:
-            - image: quay.io/giantswarm/pr-comment-filter:latest
+            - name: filter-to-pipelines
+              image: quay.io/giantswarm/pr-comment-filter:latest
