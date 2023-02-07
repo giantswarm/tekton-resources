@@ -25,6 +25,9 @@ spec:
             - name: "addChangedFiles"
               value:
                 enabled: true
+                personalAccessToken:
+                  secretName: tinkerers-ci-github-token
+                  secretKey: GITHUB_TOKEN
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -51,6 +54,9 @@ spec:
             - name: "addChangedFiles"
               value:
                 enabled: true
+                personalAccessToken:
+                  secretName: tinkerers-ci-github-token
+                  secretKey: GITHUB_TOKEN
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -81,6 +87,9 @@ spec:
             - name: "addChangedFiles"
               value:
                 enabled: true
+                personalAccessToken:
+                  secretName: tinkerers-ci-github-token
+                  secretKey: GITHUB_TOKEN
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -112,6 +121,9 @@ spec:
             - name: "addChangedFiles"
               value:
                 enabled: true
+                personalAccessToken:
+                  secretName: tinkerers-ci-github-token
+                  secretKey: GITHUB_TOKEN
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
