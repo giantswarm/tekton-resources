@@ -48,6 +48,9 @@ spec:
           params:
             - name: "eventTypes"
               value: ["issue_comment"]
+            - name: "addChangedFiles"
+              value:
+                enabled: true
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -58,7 +61,7 @@ spec:
           - name: filter
             value: "body.action in ['created', 'edited']"
           - name: filter
-            value: "body.comment.body != null && body.comment.body.substring('/run')"
+            value: "body.comment.body != null && body.comment.body.indexOf('/run') >= 0"
       bindings:
         - ref: github-pr
           kind: ClusterTriggerBinding
@@ -75,6 +78,9 @@ spec:
           params:
             - name: "eventTypes"
               value: ["pull_request"]
+            - name: "addChangedFiles"
+              value:
+                enabled: true
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -85,7 +91,7 @@ spec:
           - name: filter
             value: "body.action in ['opened']"
           - name: filter
-            value: "body.pull_request.body != null && body.pull_request.body.substring('/run')"
+            value: "body.pull_request.body != null && body.pull_request.body.indexOf('/run') >= 0"
       bindings:
         - ref: github-pr
           kind: ClusterTriggerBinding
@@ -103,6 +109,9 @@ spec:
           params:
             - name: "eventTypes"
               value: ["pull_request"]
+            - name: "addChangedFiles"
+              value:
+                enabled: true
             - name: "secretRef"
               value:
                 secretName: github-webhook-secret
@@ -113,9 +122,9 @@ spec:
           - name: filter
             value: "body.action in ['edited']"
           - name: filter
-            value: "body.pull_request.body != null && body.pull_request.body.substring('/run')"
+            value: "body.pull_request.body != null && body.pull_request.body.indexOf('/run') >= 0"
           - name: filter
-            value: "has(body.changes) && has(body.changes.body) && body.changes.body.from != null && body.changes.body.from.substring('/run') < 0"
+            value: "has(body.changes) == false || has(body.changes.body) == false || body.changes.body.from == null || body.changes.body.from.indexOf('/run') < 0"
       bindings:
         - ref: github-pr
           kind: ClusterTriggerBinding
