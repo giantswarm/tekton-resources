@@ -63,7 +63,10 @@ spec:
             - name: installation_id
               value: "33432247"
             image: quay.io/giantswarm/tinkerers-ci:latest
-            command: |
+            command:
+            - /bin/sh
+            - -c
+            - |
               BEARER_TOKEN=$(scripts/refresh-token.sh)
 
               #-------------------------
