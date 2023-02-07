@@ -24,6 +24,7 @@ spec:
     default: ""
   - name: MERGEABLE_STATE
   - name: COMMENT
+    default: ""
   - name: PREVIOUS_COMMENT
     default: ""
   - name: COMMENT_ID
