@@ -63,5 +63,31 @@ spec:
             - name: installation_id
               value: "33432247"
             image: quay.io/giantswarm/tinkerers-ci:latest
-            args: ["scripts/refresh-token.sh"]
+            command: |
+              BEARER_TOKEN=$(scripts/refresh-token.sh)
+
+              #-------------------------
+              # Update stored secret with new token 
+              #-------------------------
+
+              set +e
+              kubectl delete secret -n tekton-pipelines tinkerers-ci-github-token 
+              set -e
+
+              kubectl -n tekton-pipelines create secret generic tinkerers-ci-github-token \
+                --from-literal=GITHUB_TOKEN="${BEARER_TOKEN}"
+
+
+              #-------------------------
+              # basic-access-auth secret stored in flux-system namespace
+              #-------------------------
+
+              set +e
+              kubectl delete secret -n flux-system basic-access-auth
+              set -e
+
+              kubectl -n flux-system create secret generic basic-access-auth \
+              --from-literal=password="${BEARER_TOKEN}" \
+              --from-literal=username=x-access-token
+
           restartPolicy: Never
