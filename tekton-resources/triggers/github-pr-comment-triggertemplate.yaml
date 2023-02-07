@@ -21,6 +21,7 @@ spec:
   - name: REPO_NAME
   - name: REPO_ORG
   - name: CHANGED_FILES
+    default: ""
   - name: MERGEABLE_STATE
   - name: COMMENT
   - name: PREVIOUS_COMMENT

@@ -28,8 +28,8 @@ spec:
       value: $(body.repository.name)
     - name: REPO_ORG
       value: $(body.repository.owner.login)
-    - name: CHANGED_FILES
-      value: $(extensions.changed_files)
+    # - name: CHANGED_FILES
+    #   value: $(extensions.changed_files)
     - name: MERGEABLE_STATE
       value: $(body.pull_request.mergeable_state)
 ---
