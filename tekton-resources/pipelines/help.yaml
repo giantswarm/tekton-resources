@@ -1,0 +1,138 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: help
+  labels:
+    app.kubernetes.io/part-of: help
+    application.giantswarm.io/team: team-tinkerers
+secrets:
+- name: regcred
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: help-pipeline
+  labels:
+    app.kubernetes.io/part-of: help
+    application.giantswarm.io/team: team-tinkerers
+rules:
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelines"]
+    verbs: ["get", "list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: help-pipeline
+  labels:
+    app.kubernetes.io/part-of: help
+    application.giantswarm.io/team: team-tinkerers
+subjects:
+- kind: ServiceAccount
+  name: help
+  namespace: tekton-pipelines
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: help-pipeline
+
+---
+
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: help
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: help
+    tekton.dev/displayName: "help"
+spec:
+  description: Lists out all available Pipelines that can be triggered
+  params:
+    - name: NUMBER
+      type: string
+      description: The PR ID number
+    - name: REPO_NAME
+      type: string
+      description: The name of the GitHub repository
+    - name: REPO_ORG
+      type: string
+      description: The organisation owner of the GitHub repository
+  tasks:
+    - name: get-pipelines
+      taskSpec:
+        results:
+        - name: message
+          description: The help text message
+        steps:
+        - name: list-pipelines
+          image: quay.io/giantswarm/tinkerers-ci:latest
+          script: |
+            #!/usr/bin/env bash
+            PIPELINES=$(kubectl get pipelines -A -o json | jq -r '.items[] | "\(.metadata.name);\(.metadata.namespace);\(.spec.description)"' | sort)
+
+            MESSAGE="The following pipelines are available:\n\n"
+
+            while IFS= read -r PIPELINE
+            do
+              NAME=$(echo ${PIPELINE} | awk -F';' '{print $1}')
+              NAMESPACE=$(echo ${PIPELINE} | awk -F';' '{print $2}')
+              DESCRIPTION=$(echo ${PIPELINE} | awk -F';' '{print $3}')
+
+              MESSAGE="${MESSAGE}* **${NAME}**\n"
+              if [[ "${DESCRIPTION}" != "" ]] && [[ "${DESCRIPTION}" != "null" ]]; then
+                MESSAGE="${MESSAGE}  ${DESCRIPTION}\n"
+              fi
+              MESSAGE="${MESSAGE}  Trigger: \`/run ${NAME}"
+              if [[ "${NAMESPACE}" != "tekton-pipelines" ]]; then
+                MESSAGE="${MESSAGE} NAMESPACE=${NAMESPACE}"
+              fi
+              MESSAGE="${MESSAGE}\`\n\n"
+            done <<< "${PIPELINES}"
+
+            printf "${MESSAGE}" > $(results.message.path)
+    - name: add-comment
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: gh-api-add-comment
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: COMMENT_MESSAGE
+          value: $(tasks.get-pipelines.results.message)
+        - name: PR_ISSUE_NUMBER
+          value: $(params.NUMBER)
+        - name: REPO
+          value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+  finally:
+    - name: notify-problem
+      when:
+        - input: $(tasks.get-pipelines.status)
+          operator: in
+          values: ["Failed"]
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: gh-api-add-comment
+          - name: namespace
+            value: tekton-pipelines
+        params:
+          - name: COMMENT_MESSAGE
+            value: ":warning: Failed to get available Pipeline triggers"
+          - name: PR_ISSUE_NUMBER
+            value: $(params.NUMBER)
+          - name: REPO
+            value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+
+---
