@@ -30,8 +30,39 @@ spec:
       value: $(body.repository.owner.login)
     # - name: CHANGED_FILES
     #   value: $(extensions.changed_files)
-    - name: MERGEABLE_STATE
-      value: $(body.pull_request.mergeable_state)
+---
+apiVersion: triggers.tekton.dev/v1beta1
+kind: ClusterTriggerBinding
+metadata:
+  name: github-pr-issue
+  labels:
+    app: tekton-resources
+    app.kubernetes.io/name: tekton-resources
+    app.kubernetes.io/instance: github-pr-issue
+    app.kubernetes.io/part-of: tekton-triggers
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: github, pull request
+spec:
+  params:
+    - name: URL
+      value: $(body.issue.pull_request.url)
+    - name: NUMBER
+      value: $(body.issue.number)
+    - name: TITLE
+      value: $(body.issue.title)
+    - name: BODY
+      value: $(body.issue.body)
+    - name: GIT_REVISION
+      value: ""
+    - name: CLONE_URL
+      value: $(body.repository.clone_url)
+    - name: REPO_NAME
+      value: $(body.repository.name)
+    - name: REPO_ORG
+      value: $(body.repository.owner.login)
+    # - name: CHANGED_FILES
+    #   value: $(extensions.changed_files)
 ---
 
 apiVersion: triggers.tekton.dev/v1beta1

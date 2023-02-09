@@ -69,7 +69,7 @@ spec:
           - name: filter
             value: "body.comment.body != null && body.comment.body.indexOf('/run') >= 0"
       bindings:
-        - ref: github-pr
+        - ref: github-pr-issue
           kind: ClusterTriggerBinding
         - ref: github-comment
           kind: ClusterTriggerBinding
