@@ -22,7 +22,6 @@ spec:
   - name: REPO_ORG
   - name: CHANGED_FILES
     default: ""
-  - name: MERGEABLE_STATE
   - name: COMMENT
     default: ""
   - name: PREVIOUS_COMMENT
@@ -38,35 +37,6 @@ spec:
         generateName: github-pr-comment-filter-
       spec:
         serviceAccountName: trigger-filter
-        params:
-          - name: URL
-            value: $(tt.params.URL)
-          - name: NUMBER
-            value: $(tt.params.NUMBER)
-          - name: TITLE
-            value: $(tt.params.TITLE)
-          - name: BODY
-            value: $(tt.params.BODY)
-          - name: GIT_REVISION
-            value: $(tt.params.GIT_REVISION)
-          - name: CLONE_URL
-            value: $(tt.params.CLONE_URL)
-          - name: REPO_NAME
-            value: $(tt.params.REPO_NAME)
-          - name: REPO_ORG
-            value: $(tt.params.REPO_ORG)
-          - name: CHANGED_FILES
-            value: $(tt.params.CHANGED_FILES)
-          - name: MERGEABLE_STATE
-            value: $(tt.params.MERGEABLE_STATE)
-          - name: COMMENT
-            value: $(tt.params.COMMENT)
-          - name: PREVIOUS_COMMENT
-            value: $(tt.params.PREVIOUS_COMMENT)
-          - name: COMMENT_ID
-            value: $(tt.params.COMMENT_ID)
-          - name: COMMENT_URL
-            value: $(tt.params.COMMENT_URL)
         taskSpec:
           description: |
             Checks a PR comment for trigger text and create new pipeline runs for each
@@ -79,3 +49,29 @@ spec:
                   secretKeyRef:
                       name: tinkerers-ci-github-token
                       key: GITHUB_TOKEN
+              - name: URL
+                value: $(tt.params.URL)
+              - name: NUMBER
+                value: $(tt.params.NUMBER)
+              - name: TITLE
+                value: $(tt.params.TITLE)
+              - name: BODY
+                value: $(tt.params.BODY)
+              - name: GIT_REVISION
+                value: $(tt.params.GIT_REVISION)
+              - name: CLONE_URL
+                value: $(tt.params.CLONE_URL)
+              - name: REPO_NAME
+                value: $(tt.params.REPO_NAME)
+              - name: REPO_ORG
+                value: $(tt.params.REPO_ORG)
+              - name: CHANGED_FILES
+                value: $(tt.params.CHANGED_FILES)
+              - name: COMMENT
+                value: $(tt.params.COMMENT)
+              - name: PREVIOUS_COMMENT
+                value: $(tt.params.PREVIOUS_COMMENT)
+              - name: COMMENT_ID
+                value: $(tt.params.COMMENT_ID)
+              - name: COMMENT_URL
+                value: $(tt.params.COMMENT_URL)
