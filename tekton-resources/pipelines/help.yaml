@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: help
+  namespace: tekton-pipelines
   labels:
     app.kubernetes.io/part-of: help
     application.giantswarm.io/team: team-tinkerers
@@ -45,6 +46,7 @@ apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
   name: help
+  namespace: tekton-pipelines
   labels:
     application.giantswarm.io/team: team-tinkerers
   annotations:
