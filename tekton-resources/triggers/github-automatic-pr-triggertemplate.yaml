@@ -32,3 +32,6 @@ spec:
               script: |
                 #! /bin/bash
                 # TODO: Filter out PRs based on ones we should handle and trigger the appropriate pipelines
+        podTemplate:
+          imagePullSecrets:
+            - name: quay-imagepull-secret
