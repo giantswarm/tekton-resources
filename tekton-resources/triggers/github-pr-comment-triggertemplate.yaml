@@ -75,3 +75,6 @@ spec:
                 value: $(tt.params.COMMENT_ID)
               - name: COMMENT_URL
                 value: $(tt.params.COMMENT_URL)
+        podTemplate:
+          imagePullSecrets:
+            - name: quay-imagepull-secret
