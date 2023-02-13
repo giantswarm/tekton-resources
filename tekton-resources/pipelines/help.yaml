@@ -129,12 +129,12 @@ spec:
             value: gh-api-add-comment
           - name: namespace
             value: tekton-pipelines
-        params:
-          - name: COMMENT_MESSAGE
-            value: ":warning: Failed to get available Pipeline triggers"
-          - name: PR_ISSUE_NUMBER
-            value: $(params.NUMBER)
-          - name: REPO
-            value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+      params:
+        - name: COMMENT_MESSAGE
+          value: ":warning: Failed to get available Pipeline triggers"
+        - name: PR_ISSUE_NUMBER
+          value: $(params.NUMBER)
+        - name: REPO
+          value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
 
 ---
