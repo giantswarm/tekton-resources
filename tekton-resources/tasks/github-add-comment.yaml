@@ -70,7 +70,7 @@ spec:
           EXISTING_COMMENT_URL=$(gh api \
             --method GET \
             -H "Accept: application/vnd.github+json" \
-            /repos/giantswarm/giantswarm/issues/6326/comments \
+            /repos/${REPO}/issues/6326/comments \
             --paginate \
             | jq -s 'add' \
             | jq -r '.[] | select(.body | test("$(params.REPLACE_TOKEN)")) | .url' \
