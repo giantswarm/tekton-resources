@@ -21,6 +21,11 @@ spec:
     description: The repository the issue or PR belogs to in the format `organisation/repo-name`.
 
   # Optional
+  - name: CHECK_NAME
+    type: string
+    description: "An optional name for the Check to display as in GitHub. If not provided the display name of the pipeline will be used."
+    default: ""
+
   - name: STATUS
     type: string
     description: "The status of the check. Available values: queued, in_progress, completed"
@@ -69,6 +74,8 @@ spec:
           value: $(params.STATUS)
         - name: CONCLUSION
           value: $(params.CONCLUSION)
+        - name: CHECK_NAME
+          value: $(params.CHECK_NAME)
         - name: PIPELINE
           valueFrom:
             fieldRef:
@@ -77,6 +84,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.labels['tekton.dev/pipelineRun']
+        - name: TASK_RUN
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tekton.dev/taskRun']
         - name: DISPLAY_NAME
           valueFrom:
             fieldRef:
@@ -85,22 +96,28 @@ spec:
         #!/usr/bin/env bash
         set -e
 
+        NAME=${CHECK_NAME}
+        if [[ "${NAME}" == "" ]]; then
+          NAME=${PIPELINE}
+        fi
+
         # Build main payload
         PAYLOAD=$(
           jq --null-input \
-            --arg PIPELINE "${PIPELINE}" \
+            --arg PIPELINE "${NAME}" \
             --arg SHA "${SHA}" \
             --arg STATUS "${STATUS}" \
             --arg PIPELINE_RUN "${PIPELINE_RUN}" \
+            --arg TASK_RUN "${TASK_RUN}" \
             --arg URL "https://tekton.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io/#/namespaces/tekton-pipelines/pipelineruns/${PIPELINE_RUN}" \
             '{ "name": $PIPELINE, "head_sha": $SHA,
-              "status": $STATUS, "external_id": $PIPELINE_RUN,
+              "status": $STATUS, "external_id": $TASK_RUN,
               "details_url": $URL
             }'
         )
 
         if [[ "${CONCLUSION}" != "" ]]; then
-          # If a conclusion is set, map the `tasks.ststus` values to valid GitHub values
+          # If a conclusion is set, map the `tasks.status` values to valid GitHub values
           case "$CONCLUSION" in
           "Succeeded")
             CONCLUSION="success"
