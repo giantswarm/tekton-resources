@@ -1,0 +1,161 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: github-checks
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: checks, github
+    tekton.dev/displayName: "manage GitHub checks"
+spec:
+  description: "Creates or updates a GitHub check for a specific SHA"
+
+  params:
+  # Required
+  - name: SHA
+    type: string
+    description: The commit SHA the check should be made against
+
+  - name: REPO
+    type: string
+    description: The repository the issue or PR belogs to in the format `organisation/repo-name`.
+
+  # Optional
+  - name: CHECK_NAME
+    type: string
+    description: "An optional name for the Check to display as in GitHub. If not provided the display name of the pipeline will be used."
+    default: ""
+
+  - name: STATUS
+    type: string
+    description: "The status of the check. Available values: queued, in_progress, completed"
+    default: "in_progress"
+
+  - name: CONCLUSION
+    type: string
+    description: |
+      The result of the check run.
+      It's possible to pass in `$(tasks.status)` and the value will be converted to a matching valid value.
+      Available values: action_required, cancelled, failure, neutral, success, skipped, stale, timed_out
+    default: ""
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/tinkerers-ci:latest"
+
+  - name: GITHUB_TOKEN_SECRET
+    type: string
+    description: The name of the secret containing the GitHub authentication credentials.
+    default: tinkerers-ci-github-token
+
+  workspaces:
+    - name: results
+      description: |
+        A directory containing any result details to be included in the check summary.
+        All files found will be appended together.
+        Max total length: 65535 characters.
+      optional: true
+      readOnly: true
+
+  steps:
+    - name: github-checks
+      image: $(params.IMAGE)
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.GITHUB_TOKEN_SECRET)
+              key: GITHUB_TOKEN
+        - name: SHA
+          value: $(params.SHA)
+        - name: REPO
+          value: $(params.REPO)
+        - name: STATUS
+          value: $(params.STATUS)
+        - name: CONCLUSION
+          value: $(params.CONCLUSION)
+        - name: CHECK_NAME
+          value: $(params.CHECK_NAME)
+        - name: PIPELINE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tekton.dev/pipeline']
+        - name: PIPELINE_RUN
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tekton.dev/pipelineRun']
+        - name: TASK_RUN
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['tekton.dev/taskRun']
+        - name: DISPLAY_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['tekton.dev/displayName']
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        NAME=${CHECK_NAME}
+        if [[ "${NAME}" == "" ]]; then
+          NAME=${PIPELINE}
+        fi
+
+        # Build main payload
+        PAYLOAD=$(
+          jq --null-input \
+            --arg PIPELINE "${NAME}" \
+            --arg SHA "${SHA}" \
+            --arg STATUS "${STATUS}" \
+            --arg PIPELINE_RUN "${PIPELINE_RUN}" \
+            --arg TASK_RUN "${TASK_RUN}" \
+            --arg URL "https://tekton.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io/#/namespaces/tekton-pipelines/pipelineruns/${PIPELINE_RUN}" \
+            '{ "name": $PIPELINE, "head_sha": $SHA,
+              "status": $STATUS, "external_id": $TASK_RUN,
+              "details_url": $URL
+            }'
+        )
+
+        if [[ "${CONCLUSION}" != "" ]]; then
+          # If a conclusion is set, map the `tasks.status` values to valid GitHub values
+          case "$CONCLUSION" in
+          "Succeeded")
+            CONCLUSION="success"
+            ;;
+          "Failed")
+            CONCLUSION="failure"
+            ;;
+          "Completed")
+            CONCLUSION="skipped"
+            ;;
+          *)
+            CONCLUSION="neutral"
+            ;;
+          esac
+
+          PAYLOAD=$(echo ${PAYLOAD} '{"conclusion":"'${CONCLUSION}'"}' | jq -r -s 'add')
+
+          if [ "$(workspaces.results.bound)" == "true" ] ; then
+
+            # If the resutls workspace is provided grab all the contents for use in the output
+            RESULT_SUMMARY=$(find $(workspaces.results.path) -type f -exec cat \{\} \;)
+            if [[ "${RESULT_SUMMARY}" != "" ]]; then
+              OUTPUT=$(
+                jq --null-input \
+                  --arg RESULT_TITLE "${DISPLAY_NAME}" \
+                  --arg RESULT_SUMMARY "${RESULT_SUMMARY}" \
+                  '{"output": {"title": $RESULT_TITLE, "summary": $RESULT_SUMMARY }}'
+              )
+              PAYLOAD=$(echo ${PAYLOAD} ${OUTPUT} | jq -r -s 'add')
+            fi
+          fi
+        fi
+
+        echo ${PAYLOAD} | jq -r tostring | \
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${REPO}/check-runs \
+            --input -
+
