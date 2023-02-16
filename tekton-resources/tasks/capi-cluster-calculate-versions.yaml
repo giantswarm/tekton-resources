@@ -134,7 +134,7 @@ spec:
         if [[ "${REPO}" == "${CLUSTER_APP}" ]]; then
           CLUSTER_APP_CATALOG="cluster-test"
           CLUSTER_APP_VERSION=${CHART_VERSION}
-        else
+        elif [[ "${REPO}" == "${DEFAULT_APPS_APP}" ]]
           DEFAULT_APPS_CATALOG="cluster-test"
           DEFAULT_APPS_VERSION=${CHART_VERSION}
         fi
