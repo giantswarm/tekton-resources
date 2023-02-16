@@ -1,0 +1,55 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: capi-delete-cluster
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: capi, workload-cluster
+    tekton.dev/displayName: "CAPI - Delete cluster"
+spec:
+  description: Cleans up an existing CAPI cluster
+
+  params:
+  # Required
+  - name: CLUSTER_NAME
+    type: string
+    description: The unique name of the cluster within the MC
+
+  - name: MC_KUBECONFIG_SECRET
+    type: sting
+    description: The name of the Kubernetes secret containing the MCs kubeconfig file
+
+  # Optional
+  - name: CLUSTER_NAMESPACE
+    type: string
+    description: The namespace on the MC that the cluster resources will be deployed to
+    default: "org-giantswarm"
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/tinkerers-ci:latest"
+
+  volumes:
+    - name: kubeconfig
+      secret:
+        secretName: $(params.MC_KUBECONFIG_SECRET)
+
+  steps:
+    - name: delete-cluster
+      image: $(params.IMAGE)
+      env:
+        - name: CLUSTER_NAMESPACE
+          value: $(params.CLUSTER_NAMESPACE)
+        - name: CLUSTER_NAME
+          value: $(params.CLUSTER_NAME)
+      volumeMounts:
+        - name: kubeconfig
+          mountPath: /etc/kubeconfig/kubeconfig
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        export KUBECONFIG=/etc/kubeconfig/kubeconfig
+
+        kubectl -n ${CLUSTER_NAMESPACE} delete app ${CLUSTER_NAME} ${CLUSTER_NAME}-default-apps --ignore-not-found
