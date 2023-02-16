@@ -1,0 +1,145 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: capi-cluster-calculate-versions
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: capi, workload-cluster
+    tekton.dev/displayName: "CAPI cluster - calculate versions"
+spec:
+  description: "Calculates the versions of cluster related apps to use"
+
+  params:
+  # Required
+  - name: REPO
+    type: string
+    description: The repository that has triggered the pipeline in the format `organisation/repo-name`.
+
+  - name: SHA
+    type: string
+    description: The commit SHA that has triggered the pipeline
+
+  - name: PROVIDER
+    type: string
+    description: The provider we are building a cluster for. (E.g. capa, capg)
+
+  # Optional
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/tinkerers-ci:latest"
+
+  - name: GITHUB_TOKEN_SECRET
+    type: string
+    description: The name of the secret containing the GitHub authentication credentials.
+    default: tinkerers-ci-github-token
+
+  results:
+  - name: cluster-app-chart-name
+    description: The name of the cluster app to use.
+  - name: cluster-app-chart-version
+    description: Version to use when installing the cluster app.
+  - name: cluster-app-catalog
+    description: Catalog to use when installing the cluster app.
+
+  - name: default-apps-chart-name
+    description: The name of the default-apps app to use.
+  - name: default-apps-chart-version
+    description: Version to use when installing default-apps app.
+  - name: default-apps-catalog
+    description: Catalog to use when installing the default-apps app.
+
+  steps:
+    - name: map-provider-to-charts
+      image: $(params.IMAGE)
+      env:
+        - name: PROVIDER
+          value: $(params.PROVIDER)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        # Work out app names from provider
+        CLUSTER_APP=""
+        DEFAULT_APPS_APP=""
+
+        case "${PROVIDER}" in
+        "capa" | "aws")
+            CLUSTER_APP="cluster-aws"
+            DEFAULT_APPS_APP="default-apps-aws"
+            ;;
+        "capg" | "gcp")
+            CLUSTER_APP="cluster-gcp"
+            DEFAULT_APPS_APP="default-apps-gcp"
+            ;;
+        "capz" | "azure")
+            CLUSTER_APP="cluster-azure"
+            DEFAULT_APPS_APP="default-apps-azure"
+            ;;
+        "capo" | "openstack")
+            CLUSTER_APP="cluster-openstack"
+            DEFAULT_APPS_APP="default-apps-openstack"
+            ;;
+        "capv" | "vsphere")
+            CLUSTER_APP="cluster-vsphere"
+            DEFAULT_APPS_APP="default-apps-vsphere"
+            ;;
+        "capvcd" | "cloud-director" | "clouddirector")
+            CLUSTER_APP="cluster-cloud-director"
+            DEFAULT_APPS_APP="default-apps-cloud-director"
+            ;;
+        *)
+            echo "Unknown provider. Unable to match to cluster app."
+            exit 1
+            ;;
+        esac
+
+        echo -n ${CLUSTER_APP} > $(results.cluster-app-chart-name.path)
+        echo -n ${DEFAULT_APPS_APP} > $(results.default-apps-chart-name.path)
+
+    - name: calculate-chart-versions
+      image: $(params.IMAGE)
+      env:
+        - name: GITHUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: $(params.GITHUB_TOKEN_SECRET)
+              key: GITHUB_TOKEN
+        - name: REPO
+          value: $(params.REPO)
+        - name: SHA
+          value: $(params.SHA)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        CLUSTER_APP=$(cat $(results.cluster-app-chart-name.path))
+        DEFAULT_APPS_APP=$(cat $(results.default-apps-chart-name.path))
+
+        LATEST_TAG=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          /repos/${REPO}/tags \
+          | jq -r '.[0].name'
+        )
+        CHART_VERSION="${LATEST_TAG}-${SHA}""
+
+        # Trim org from repo name
+        REPO=${REPO#"giantswarm/"}
+
+        CLUSTER_APP_VERSION=""
+        CLUSTER_APP_CATALOG="cluster"
+        DEFAULT_APPS_VERSION=""
+        DEFAULT_APPS_CATALOG="cluster"
+
+        if [[ "${REPO}" == "${CLUSTER_APP}" ]]; then
+          CLUSTER_APP_CATALOG="cluster-test"
+          CLUSTER_APP_VERSION=${CHART_VERSION}
+        else
+          DEFAULT_APPS_CATALOG="cluster-test"
+          DEFAULT_APPS_VERSION=${CHART_VERSION}
+        fi
+
+        echo -n ${CLUSTER_APP_VERSION} > $(results.cluster-app-chart-version.path)
+        echo -n ${CLUSTER_APP_CATALOG} > $(results.cluster-app-catalog.path)
+        echo -n ${DEFAULT_APPS_VERSION} > $(results.default-apps-chart-version.path)
+        echo -n ${DEFAULT_APPS_CATALOG} > $(results.default-apps-catalog.path)
