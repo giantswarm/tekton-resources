@@ -52,11 +52,6 @@ spec:
     type: string
     default: "quay.io/giantswarm/tinkerers-ci:latest"
 
-  - name: GITHUB_TOKEN_SECRET
-    type: string
-    description: The name of the secret containing the GitHub authentication credentials.
-    default: tinkerers-ci-github-token
-
   volumes:
     - name: app-manifests
       emptyDir: {}
