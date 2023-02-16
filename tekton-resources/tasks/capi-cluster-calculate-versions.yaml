@@ -126,9 +126,17 @@ spec:
         # Trim org from repo name
         REPO=${REPO#"giantswarm/"}
 
-        CLUSTER_APP_VERSION=""
+        CLUSTER_APP_VERSION="$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          /repos/giantswarm/${CLUSTER_APP}/tags \
+          | jq -r '.[0].name | ltrimstr("v")'
+        )"
         CLUSTER_APP_CATALOG="cluster"
-        DEFAULT_APPS_VERSION=""
+        DEFAULT_APPS_VERSION="$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          /repos/giantswarm/${DEFAULT_APPS_APP}/tags \
+          | jq -r '.[0].name | ltrimstr("v")'
+        )"
         DEFAULT_APPS_CATALOG="cluster"
 
         if [[ "${REPO}" == "${CLUSTER_APP}" ]]; then
