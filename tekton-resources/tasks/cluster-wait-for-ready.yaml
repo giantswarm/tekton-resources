@@ -1,0 +1,89 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: cluster-wait-for-ready
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: workload-cluster
+    tekton.dev/displayName: "Cluster - Wait for ready"
+spec:
+  description: Watches a cluster until a given number of nodes are running and ready
+
+  params:
+  # Required
+  - name: PROVIDER
+    type: string
+    description: |
+      The provider the cluster is running on. (E.g. aws, azure).
+      If CAPA, CAPG, etc. are provided these will be converted to the appropriate matching value.
+
+  # Optional
+  - name: NUM_OF_NODES
+    type: string
+    description: The number of nodes to wait for being ready
+    default: "4"
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/standup:3.2.0"
+
+  - name: GITHUB_TOKEN_SECRET
+    type: string
+    description: The name of the secret containing the GitHub authentication credentials.
+    default: tinkerers-ci-github-token
+
+  workspaces:
+    - name: cluster
+      description: |
+        The directory where the cluster kubeconfig exists.
+        This requires a valid kubeconfig file named `kubeconfig`.
+      readOnly: true
+
+  steps:
+    - name: check-for-kubeconfig
+      image: bash:5
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        if [ ! -f "$(workspaces.cluster.path)/kubeconfig" ]; then
+          echo "Kubeconfig file is missing from the workspace"
+          exit 1
+        fi
+
+    - name: wait-for-ready
+      image: $(params.IMAGE)
+      env:
+        - name: PROVIDER
+          value: $(params.PROVIDER)
+        - name: NUM_OF_NODES
+          value: $(params.NUM_OF_NODES)
+      script: |
+        #! /bin/sh
+
+        case "${PROVIDER}" in
+        "capa" | "aws")
+            PROVIDER="aws"
+            ;;
+        "capg" | "gcp")
+            PROVIDER="gcp"
+            ;;
+        "capz" | "azure")
+            PROVIDER="azure"
+            ;;
+        "capo" | "openstack")
+            PROVIDER="openstack"
+            ;;
+        "capv" | "vsphere")
+            PROVIDER="vsphere"
+            ;;
+        "capvcd" | "cloud-director" | "clouddirector")
+            PROVIDER="cloud-director"
+            ;;
+        esac
+
+        standup wait \
+          --kubeconfig $(workspaces.cluster.path)/kubeconfig \
+          --provider $(cat $(results.provider.path)) \
+          --nodes ${NUM_OF_NODES}
+
