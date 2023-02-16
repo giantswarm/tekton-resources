@@ -136,7 +136,7 @@ spec:
         echo -n "${CLUSTER_NAME}" > $(results.cluster-name.path)
         echo -n "${CLUSTER_NAMESPACE}" > $(results.cluster-namespace.path)
 
-    - name: template-apps
+    - name: apply-cluster-manifests
       image: $(params.IMAGE)
       env:
         - name: CLUSTER_NAMESPACE
