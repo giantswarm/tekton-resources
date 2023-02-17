@@ -154,6 +154,8 @@ spec:
 
         export KUBECONFIG=/etc/kubeconfig/kubeconfig
 
+        kubectl version
+
         kubectl apply -f "/mnt/app-manifests/*.yaml"
 
         CLUSTER_NAME=$(cat $(results.cluster-name.path))
