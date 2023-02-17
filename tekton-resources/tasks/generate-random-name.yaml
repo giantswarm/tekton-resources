@@ -1,0 +1,43 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: generate-random-name
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: random, name, id
+    tekton.dev/displayName: "Generate random name"
+spec:
+  description: Generates a random name
+
+  params:
+  # Required
+
+  # Optional
+  - name: PREFIX
+    type: string
+    description: A fixed prefix to use.
+    default: "t"
+
+  - name: LENGTH
+    type: string
+    description: The length of the random string not including the prefix
+    default: "9"
+
+  results:
+    - name: value
+      description: The generated random name
+
+  steps:
+    - name: generate
+      image: bash:5
+      env:
+        - name: PREFIX
+          value: $(params.PREFIX)
+        - name: LENGTH
+          value: $(params.LENGTH)
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        NAME="${PREFIX}$(tr -dc 0-9 </dev/urandom | head -c ${LENGTH})"
+        echo -n "${NAME}" > $(results.value.path)
