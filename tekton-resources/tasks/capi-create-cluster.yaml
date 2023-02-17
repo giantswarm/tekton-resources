@@ -43,6 +43,11 @@ spec:
     description: The catalog of the default-apps app
     default: cluster
 
+  - name: CLUSTER_NAME
+    type: string
+    description: The name of the cluster to use. If not provided one will be generated.
+    default: ""
+
   - name: CLUSTER_NAMESPACE
     type: string
     description: The namespace on the MC that the cluster resources will be deployed to
@@ -91,6 +96,8 @@ spec:
           value: $(params.DEFAULT_APPS_APP_VERSION)
         - name: DEFAULT_APPS_APP_CATALOG
           value: $(params.DEFAULT_APPS_APP_CATALOG)
+        - name: CLUSTER_NAME
+          value: $(params.CLUSTER_NAME)
         - name: CLUSTER_NAMESPACE
           value: $(params.CLUSTER_NAMESPACE)
       volumeMounts:
@@ -100,7 +107,7 @@ spec:
         #!/usr/bin/env bash
         set -e
 
-        CLUSTER_NAME="t$(date +%s | cut -c7-10)"
+        CLUSTER_NAME=${CLUSTER_NAME:="t$(date +%s | cut -c7-10)"}
 
         kubectl gs template app \
           --app-name "${CLUSTER_NAME}" \
