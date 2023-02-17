@@ -35,27 +35,32 @@ spec:
         This requires a valid kubeconfig file named `kubeconfig`.
       readOnly: true
 
+  volumes:
+    - name: shared-dir
+      emptyDir: {}
+
   steps:
     - name: check-for-kubeconfig
       image: bash:5
       script: |
         #!/usr/bin/env bash
         set -e
-        if [ ! -f "$(workspaces.cluster.path)/kubeconfig" ]; then
+        if [ ! -f "$(workspaces.kubeconfig.path)/kubeconfig" ]; then
           echo "Kubeconfig file is missing from the workspace"
           exit 1
         fi
 
-    - name: wait-for-ready
-      image: $(params.IMAGE)
+    - name: map-provider-name
+      image: bash:5
       env:
         - name: PROVIDER
           value: $(params.PROVIDER)
-        - name: NUM_OF_NODES
-          value: $(params.NUM_OF_NODES)
+      volumeMounts:
+        - name: shared-dir
+          mountPath: /mnt/shared-dir
       script: |
-        #! /bin/sh
-
+        #!/usr/bin/env bash
+        set -e
         case "${PROVIDER,,}" in
         "capa" | "aws")
             PROVIDER="aws"
@@ -77,8 +82,23 @@ spec:
             ;;
         esac
 
+        echo -n ${PROVIDER} > /mnt/shared-dir/provider
+
+    - name: wait-for-ready
+      image: $(params.IMAGE)
+      env:
+        - name: NUM_OF_NODES
+          value: $(params.NUM_OF_NODES)
+      volumeMounts:
+        - name: shared-dir
+          mountPath: /mnt/shared-dir
+      script: |
+        #! /bin/sh
+
+        PROVIDER=$(cat /mnt/shared-dir/provider)
+
         standup wait \
-          --kubeconfig $(workspaces.cluster.path)/kubeconfig \
-          --provider $(cat $(results.provider.path)) \
+          --kubeconfig $(workspaces.kubeconfig.path)/kubeconfig \
+          --provider ${PROVIDER} \
           --nodes ${NUM_OF_NODES}
 
