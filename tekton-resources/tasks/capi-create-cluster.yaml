@@ -75,9 +75,9 @@ spec:
         The directory where the workload cluster kubeconfig will be stored
 
   results:
-    - name: custer-name
+    - name: cluster-name
       description: The unique name of the cluster
-    - name: custer-namespace
+    - name: cluster-namespace
       description: The namespace the cluster is deployed into
 
   steps:
