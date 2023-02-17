@@ -29,7 +29,7 @@ spec:
     description: The version of the default-apps app to use
 
   - name: MC_KUBECONFIG_SECRET
-    type: sting
+    type: string
     description: The name of the Kubernetes secret containing the MCs kubeconfig file
 
   # Optional
