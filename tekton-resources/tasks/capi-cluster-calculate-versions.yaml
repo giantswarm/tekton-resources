@@ -63,7 +63,7 @@ spec:
         CLUSTER_APP=""
         DEFAULT_APPS_APP=""
 
-        case "${PROVIDER}" in
+        case "${PROVIDER,,}" in
         "capa" | "aws")
             CLUSTER_APP="cluster-aws"
             DEFAULT_APPS_APP="default-apps-aws"
