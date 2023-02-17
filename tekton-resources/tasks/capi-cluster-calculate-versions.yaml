@@ -121,7 +121,7 @@ spec:
           /repos/${REPO}/tags \
           | jq -r '.[0].name'
         )
-        CHART_VERSION="${LATEST_TAG}-${SHA}""
+        CHART_VERSION="${LATEST_TAG}-${SHA}"
 
         # Trim org from repo name
         REPO=${REPO#"giantswarm/"}
