@@ -45,7 +45,7 @@ spec:
           value: $(params.CLUSTER_NAME)
       volumeMounts:
         - name: kubeconfig
-          mountPath: /etc/kubeconfig/kubeconfig
+          mountPath: /etc/kubeconfig
       script: |
         #!/usr/bin/env bash
         set -e

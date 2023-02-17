@@ -147,14 +147,14 @@ spec:
         - name: app-manifests
           mountPath: /mnt/app-manifests
         - name: kubeconfig
-          mountPath: /etc/kubeconfig/kubeconfig
+          mountPath: /etc/kubeconfig
       script: |
         #!/usr/bin/env bash
         set -e
 
         export KUBECONFIG=/etc/kubeconfig/kubeconfig
 
-        kubectl apply -f /mnt/app-manifests/*.yaml
+        kubectl apply -f "/mnt/app-manifests/*.yaml"
 
         CLUSTER_NAME=$(cat $(results.cluster-name.path))
 
