@@ -29,7 +29,7 @@ spec:
     default: "quay.io/giantswarm/standup:3.2.0"
 
   workspaces:
-    - name: cluster
+    - name: kubeconfig
       description: |
         The directory where the cluster kubeconfig exists.
         This requires a valid kubeconfig file named `kubeconfig`.
@@ -56,7 +56,7 @@ spec:
       script: |
         #! /bin/sh
 
-        case "${PROVIDER}" in
+        case "${PROVIDER,,}" in
         "capa" | "aws")
             PROVIDER="aws"
             ;;
