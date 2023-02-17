@@ -121,6 +121,8 @@ spec:
 
         # Fix the name of the ConfigMap
         sed -i 's/-userconfig/-user-values/g' "/mnt/app-manifests/cluster.yaml"
+        # Add missing labels to ConfigMap
+        yq -i 'select(.kind == "ConfigMap").metadata.labels."giantswarm.io/cluster" = "'${CLUSTER_NAME}'"' "/mnt/app-manifests/cluster.yaml"
 
         kubectl gs template app \
             --app-name "${CLUSTER_NAME}-default-apps" \
@@ -129,11 +131,17 @@ spec:
             --catalog "${DEFAULT_APPS_APP_CATALOG}" \
             --target-namespace "${CLUSTER_NAMESPACE}" \
             --in-cluster \
+            --cluster-name "${CLUSTER_NAME}" \
             --user-configmap "$(workspaces.values.path)/default-apps-values.yaml" \
           > "/mnt/app-manifests/default-apps.yaml"
 
         # Fix the name of the ConfigMap
         sed -i 's/-userconfig/-user-values/g' "/mnt/app-manifests/default-apps.yaml"
+        # Add missing labels to App
+        yq -i 'select(.kind == "App").metadata.labels."giantswarm.io/managed-by" = "cluster"' "/mnt/app-manifests/default-apps.yaml"
+        # Add cluster values as config
+        yq -i 'select(.kind == "App").spec.config.configMap.name = "'${CLUSTER_NAME}'-cluster-values"' "/mnt/app-manifests/default-apps.yaml"
+        yq -i 'select(.kind == "App").spec.config.configMap.namespace = "'${CLUSTER_NAMESPACE}'"' "/mnt/app-manifests/default-apps.yaml"
 
         echo -n "${CLUSTER_NAME}" > $(results.cluster-name.path)
         echo -n "${CLUSTER_NAMESPACE}" > $(results.cluster-namespace.path)
