@@ -8,7 +8,7 @@ labels:
 
 resources:
 # repo: tektoncd/pipeline
-- https://github.com/tektoncd/pipeline/releases/download/v0.44.0/release.yaml
+- https://github.com/tektoncd/pipeline/releases/download/v0.45.0/release.yaml
 # repo: tektoncd/triggers
 - https://github.com/tektoncd/triggers/releases/download/v0.22.1/release.yaml
 # repo: tektoncd/triggers
