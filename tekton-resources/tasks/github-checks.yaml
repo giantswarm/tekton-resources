@@ -81,6 +81,8 @@ spec:
           value: $(params.CONCLUSION)
         - name: CHECK_NAME
           value: $(params.CHECK_NAME)
+        - name: MESSAGE
+          value: $(params.MESSAGE)
         - name: PIPELINE
           valueFrom:
             fieldRef:
