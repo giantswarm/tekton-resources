@@ -158,7 +158,7 @@ spec:
             OUTPUT=$(
               jq --null-input \
                 --arg RESULT_TITLE "${DISPLAY_NAME}" \
-                --arg RESULT_SUMMARY "${RESULT_SUMMARY}" \
+                --arg SUMMARY "${SUMMARY}" \
                 '{"output": {"title": $RESULT_TITLE, "summary": $SUMMARY }}'
             )
             PAYLOAD=$(echo ${PAYLOAD} ${OUTPUT} | jq -r -s 'add')
