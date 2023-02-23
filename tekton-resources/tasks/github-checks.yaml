@@ -92,6 +92,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['tekton.dev/displayName']
+        - name: PIPELINE_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
       script: |
         #!/usr/bin/env bash
         set -e
@@ -109,7 +113,7 @@ spec:
             --arg STATUS "${STATUS}" \
             --arg PIPELINE_RUN "${PIPELINE_RUN}" \
             --arg TASK_RUN "${TASK_RUN}" \
-            --arg URL "https://tekton.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io/#/namespaces/tekton-pipelines/pipelineruns/${PIPELINE_RUN}" \
+            --arg URL "https://tekton.ei9o7.k8s.gorilla.eu-central-1.aws.gigantic.io/#/namespaces/${PIPELINE_NAMESPACE}/pipelineruns/${PIPELINE_RUN}" \
             '{ "name": $PIPELINE, "head_sha": $SHA,
               "status": $STATUS, "external_id": $TASK_RUN,
               "details_url": $URL
