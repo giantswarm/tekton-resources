@@ -38,6 +38,11 @@ spec:
       It's possible to pass in `$(tasks.status)` and the value will be converted to a matching valid value.
       Available values: action_required, cancelled, failure, neutral, success, skipped, stale, timed_out
     default: ""
+    
+  - name: MESSAGE
+    type: string
+    description: "An optional message to add at the begining of the check logs."
+    default: ""
 
   - name: IMAGE
     type: string
@@ -139,20 +144,24 @@ spec:
 
           PAYLOAD=$(echo ${PAYLOAD} '{"conclusion":"'${CONCLUSION}'"}' | jq -r -s 'add')
 
+          SUMMARY="${MESSAGE}"
+          
           if [ "$(workspaces.results.bound)" == "true" ] ; then
-
             # If the resutls workspace is provided grab all the contents for use in the output
             RESULT_SUMMARY=$(find $(workspaces.results.path) -type f -exec cat \{\} \;)
-            if [[ "${RESULT_SUMMARY}" != "" ]]; then
-              OUTPUT=$(
-                jq --null-input \
-                  --arg RESULT_TITLE "${DISPLAY_NAME}" \
-                  --arg RESULT_SUMMARY "${RESULT_SUMMARY}" \
-                  '{"output": {"title": $RESULT_TITLE, "summary": $RESULT_SUMMARY }}'
-              )
-              PAYLOAD=$(echo ${PAYLOAD} ${OUTPUT} | jq -r -s 'add')
-            fi
+            SUMMARY="$SUMMARY \n\n $RESULT_SUMMARY"
           fi
+          
+          if [[ "${SUMMARY}" != "" ]]; then
+            OUTPUT=$(
+              jq --null-input \
+                --arg RESULT_TITLE "${DISPLAY_NAME}" \
+                --arg RESULT_SUMMARY "${RESULT_SUMMARY}" \
+                '{"output": {"title": $RESULT_TITLE, "summary": $SUMMARY }}'
+            )
+            PAYLOAD=$(echo ${PAYLOAD} ${OUTPUT} | jq -r -s 'add')
+          fi
+          
         fi
 
         echo ${PAYLOAD} | jq -r tostring | \
