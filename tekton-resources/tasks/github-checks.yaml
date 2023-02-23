@@ -145,7 +145,7 @@ spec:
           if [ "$(workspaces.results.bound)" == "true" ] ; then
             # If the resutls workspace is provided grab all the contents for use in the output
             RESULT_SUMMARY=$(find $(workspaces.results.path) -type f -exec cat \{\} \;)
-            SUMMARY="$SUMMARY $RESULT_SUMMARY"
+            SUMMARY="$SUMMARY \n\n $RESULT_SUMMARY"
           fi
           
           if [[ "${SUMMARY}" != "" ]]; then
