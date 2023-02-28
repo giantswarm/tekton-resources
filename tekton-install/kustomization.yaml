@@ -14,7 +14,7 @@ resources:
 # repo: tektoncd/triggers
 - https://github.com/tektoncd/triggers/releases/download/v0.22.2/interceptors.yaml
 # repo: tektoncd/dashboard
-- https://github.com/tektoncd/dashboard/releases/download/v0.32.0/release.yaml
+- https://github.com/tektoncd/dashboard/releases/download/v0.33.0/release.yaml
 - resources/oauth2-proxy.yaml
 - resources/dashboard-ingress.yaml
 - resources/dashboard-extensions-base.yaml
