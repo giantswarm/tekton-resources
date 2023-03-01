@@ -120,7 +120,6 @@ spec:
       script: |
         #!/usr/bin/env bash
         set -e
-        set -x
 
         NAME=${CHECK_NAME}
         if [[ "${NAME}" == "" ]]; then
