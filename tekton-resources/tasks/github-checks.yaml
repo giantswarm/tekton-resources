@@ -183,8 +183,6 @@ spec:
           )
           PAYLOAD=$(echo ${PAYLOAD} ${OUTPUT} | jq -r -s 'add')
         fi
-          
-        echo ${PAYLOAD} 
 
         echo ${PAYLOAD} | jq -r tostring | \
           gh api \
