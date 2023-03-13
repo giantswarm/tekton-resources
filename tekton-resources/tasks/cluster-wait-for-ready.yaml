@@ -1,0 +1,104 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: cluster-wait-for-ready
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: workload-cluster
+    tekton.dev/displayName: "Cluster - Wait for ready"
+spec:
+  description: Watches a cluster until a given number of nodes are running and ready
+
+  params:
+  # Required
+  - name: PROVIDER
+    type: string
+    description: |
+      The provider the cluster is running on. (E.g. aws, azure).
+      If CAPA, CAPG, etc. are provided these will be converted to the appropriate matching value.
+
+  # Optional
+  - name: NUM_OF_NODES
+    type: string
+    description: The number of nodes to wait for being ready
+    default: "4"
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/standup:3.2.0"
+
+  workspaces:
+    - name: kubeconfig
+      description: |
+        The directory where the cluster kubeconfig exists.
+        This requires a valid kubeconfig file named `kubeconfig`.
+      readOnly: true
+
+  volumes:
+    - name: shared-dir
+      emptyDir: {}
+
+  steps:
+    - name: check-for-kubeconfig
+      image: bash:5
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        if [ ! -f "$(workspaces.kubeconfig.path)/kubeconfig" ]; then
+          echo "Kubeconfig file is missing from the workspace"
+          exit 1
+        fi
+
+    - name: map-provider-name
+      image: bash:5
+      env:
+        - name: PROVIDER
+          value: $(params.PROVIDER)
+      volumeMounts:
+        - name: shared-dir
+          mountPath: /mnt/shared-dir
+      script: |
+        #!/usr/bin/env bash
+        set -e
+        case "${PROVIDER,,}" in
+        "capa" | "aws")
+            PROVIDER="aws"
+            ;;
+        "capg" | "gcp")
+            PROVIDER="gcp"
+            ;;
+        "capz" | "azure")
+            PROVIDER="azure"
+            ;;
+        "capo" | "openstack")
+            PROVIDER="openstack"
+            ;;
+        "capv" | "vsphere")
+            PROVIDER="vsphere"
+            ;;
+        "capvcd" | "cloud-director" | "clouddirector")
+            PROVIDER="cloud-director"
+            ;;
+        esac
+
+        echo -n ${PROVIDER} > /mnt/shared-dir/provider
+
+    - name: wait-for-ready
+      image: $(params.IMAGE)
+      env:
+        - name: NUM_OF_NODES
+          value: $(params.NUM_OF_NODES)
+      volumeMounts:
+        - name: shared-dir
+          mountPath: /mnt/shared-dir
+      script: |
+        #! /bin/sh
+
+        PROVIDER=$(cat /mnt/shared-dir/provider)
+
+        standup wait \
+          --kubeconfig $(workspaces.kubeconfig.path)/kubeconfig \
+          --provider ${PROVIDER} \
+          --nodes ${NUM_OF_NODES}
+

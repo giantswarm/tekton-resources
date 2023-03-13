@@ -1,0 +1,310 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: create-capg-cluster
+  namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/part-of: create-capg-cluster
+secrets:
+- name: regcred
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mc-kubeconfig-gohan
+  namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/part-of: create-capg-cluster
+type: Opaque
+data:
+  kubeconfig: ENC[AES256_GCM,data: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,iv:iuv9q4fB34G7cOF8GZsUfGWmGtbekbXEFq+NlsuU1yI=,tag:aI956p+lQaOEPyryI3KTTA==,type:str]
+sops:
+  kms: []
+  gcp_kms: []
+  azure_kv: []
+  hc_vault: []
+  age:
+    - recipient: age12vs3x7x0ne8ghx4js9dwetn29vvtrrelvcgup2reqmdhdeqwd9hqht25ex
+      enc: |
+        -----BEGIN AGE ENCRYPTED FILE-----
+        YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSBRQzBQczVoUnBEQzJjaGtB
+        YVVIdnJEWHNhQVBoR3UxV1grdXVQRkovNHlJCjJkdWYzNTZacldnQVVqb0ZkR1VE
+        ZGEvMWxaMFpsZVh1V2szOElUcmc0MU0KLS0tIHRuWklMU1o4aGRjUEwvcFlmMHdX
+        c0s4MmIxT2FoUjUzaUR0VE1tdTIwbTAKJfkwu4gAjxXSHm83R97N/GtqT/hxNXj5
+        tARdYacc94cyHbElyVIaZIXnkrE5IxDJsI1Uzj8OvllSfrGa1FItmA==
+        -----END AGE ENCRYPTED FILE-----
+  lastmodified: "2023-02-17T07:52:13Z"
+  mac: ENC[AES256_GCM,data:afzL3WF5wX7nC8N5icWccVBqZufCVWGTBQtXsgmFfR+Q/KPEdVOuuCnVTJN3v2TJBUd+ho4O/RBqca0k4F530xRxMHkHaFsTqyWzZdKr1qDXtdDM26Kuc43xcjEnRqWNARvRHWb70LNrM+QdXvEIDVR96DMQOhe4+pHs6rYtKec=,iv:FCNXVhYHEDV7eQ4VdCpofTi232CfgtiIRVGsVl9n1Tw=,tag:4KhVQ2Q9kPASpikWbdRqkg==,type:str]
+  pgp: []
+  encrypted_regex: ^(data|stringData)$
+  version: 3.7.3
+
+---
+
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: create-capg-cluster
+  namespace: tekton-pipelines
+  labels:
+    app.kubernetes.io/part-of: create-capg-cluster
+  annotations:
+    tekton.dev/tags: capg, capi, create-cluster, gcp
+    tekton.dev/displayName: "Create CAPG cluster"
+spec:
+  description: Creates a new CAPG workload cluster
+
+  params:
+    - name: GIT_REVISION
+      type: string
+      description: The git commit SHA
+    - name: REPO_NAME
+      type: string
+      description: The name of the repo triggering this pipeline
+    - name: REPO_ORG
+      type: string
+      description: The owner of the repo triggering this pipeline
+
+  workspaces:
+    - name: shared
+
+  tasks:
+    - name: create-github-check
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: github-checks
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: SHA
+          value: $(params.GIT_REVISION)
+        - name: REPO
+          value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+        - name: STATUS
+          value: "in_progress"
+        - name: CHECK_NAME
+          value: "Create cluster"
+
+    - name: calculate-versions
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: capi-cluster-calculate-versions
+          - name: namespace
+            value: tekton-pipelines
+      params:
+        - name: REPO
+          value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+        - name: SHA
+          value: $(params.GIT_REVISION)
+        - name: PROVIDER
+          value: "CAPG"
+
+    - name: generate-cluster-name
+      taskRef:
+        resolver: cluster
+        params:
+          - name: kind
+            value: task
+          - name: name
+            value: generate-random-name
+          - name: namespace
+            value: tekton-pipelines
+
+    - name: build-values
+      runAfter:
+        - calculate-versions
+        - generate-cluster-name
+      workspaces:
+        - name: values
+          workspace: shared
+          subPath: values
+      params:
+        - name: CLUSTER_NAME
+          value: $(tasks.generate-cluster-name.results.value)
+      taskSpec:
+        params:
+          - name: CLUSTER_NAME
+            type: string
+        workspaces:
+          - name: values
+            description: |
+              A directory containing two values files: cluster-values.yaml and default-apps-values.yaml
+        steps:
+        - name: build-values
+          image: quay.io/giantswarm/tinkerers-ci:latest
+          env:
+            - name: CLUSTER_NAME
+              value: "$(params.CLUSTER_NAME)"
+          script: |
+            #!/usr/bin/env bash
+
+            CLUSTER_EXTERNAL_IP=$(curl https://api.ipify.org)
+
+            echo "
+            clusterName: ${CLUSTER_NAME}
+            clusterDescription: e2e test
+            organization: giantswarm
+            controlPlane:
+              apiAllowlistSubnets: "${CLUSTER_EXTERNAL_IP}/32"
+              containerdVolume: {}
+              etcdVolume: {}
+              kubeletVolume: {}
+              replicas: 3
+              rootVolume: {}
+              serviceAccount:
+                email: default
+                scopes:
+                - https://www.googleapis.com/auth/compute
+            gcp:
+              failureDomains:
+              - europe-west6-a
+              project: giantswarm-352614
+              region: europe-west6
+            machineDeployments:
+            - containerdVolume: {}
+              failureDomain: europe-west6-a
+              instanceType: n1-standard-4
+              kubeletVolume: {}
+              name: worker0
+              replicas: 3
+              rootVolume:
+                sizeGB: 100
+              serviceAccount:
+                email: default
+                scopes:
+                - https://www.googleapis.com/auth/compute
+            " > "$(workspaces.values.path)/cluster-values.yaml"
+
+            echo "
+            clusterName: ${CLUSTER_NAME}
+            organization: giantswarm
+            " > "$(workspaces.values.path)/default-apps-values.yaml"
+
+    - name: create-cluster
+      runAfter:
+        - build-values
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: capi-create-cluster
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: CLUSTER_APP_NAME
+          value: "$(tasks.calculate-versions.results.cluster-app-chart-name)"
+        - name: CLUSTER_APP_VERSION
+          value: "$(tasks.calculate-versions.results.cluster-app-chart-version)"
+        - name: CLUSTER_APP_CATALOG
+          value: "$(tasks.calculate-versions.results.cluster-app-catalog)"
+        - name: DEFAULT_APPS_APP_NAME
+          value: "$(tasks.calculate-versions.results.default-apps-chart-name)"
+        - name: DEFAULT_APPS_APP_VERSION
+          value: "$(tasks.calculate-versions.results.default-apps-chart-version)"
+        - name: DEFAULT_APPS_APP_CATALOG
+          value: "$(tasks.calculate-versions.results.default-apps-catalog)"
+        - name: MC_KUBECONFIG_SECRET
+          value: "mc-kubeconfig-gohan"
+        - name: CLUSTER_NAME
+          value: $(tasks.generate-cluster-name.results.value)
+      workspaces:
+        - name: values
+          workspace: shared
+          subPath: values
+        - name: kubeconfig
+          workspace: shared
+          subPath: kubeconfig
+
+    - name: wait-for-ready
+      runAfter:
+        - create-cluster
+      timeout: 1h0m0s
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: cluster-wait-for-ready
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: PROVIDER
+          value: "CAPG"
+      workspaces:
+        - name: kubeconfig
+          workspace: shared
+          subPath: kubeconfig
+
+  finally:
+    - name: cleanup-cluster
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: capi-delete-cluster
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: CLUSTER_NAME
+          value: "$(tasks.create-cluster.results.cluster-name)"
+        - name: MC_KUBECONFIG_SECRET
+          value: "mc-kubeconfig-gohan"
+
+    - name: complete-github-check
+      taskRef:
+        resolver: cluster
+        params:
+        - name: kind
+          value: task
+        - name: name
+          value: github-checks
+        - name: namespace
+          value: tekton-pipelines
+      params:
+        - name: SHA
+          value: $(params.GIT_REVISION)
+        - name: REPO
+          value: "$(params.REPO_ORG)/$(params.REPO_NAME)"
+        - name: STATUS
+          value: "completed"
+        - name: CHECK_NAME
+          value: "Create cluster"
+        - name: CONCLUSION
+          value: "$(tasks.status)"
+
+  results:
+    - name: cluster-app-chart-name
+      description: The name of the cluster app used to build the WC
+      value: $(tasks.calculate-versions.results.cluster-app-chart-name)
+    - name: cluster-app-chart-version
+      description: The version of the cluster app used to build the WC
+      value: $(tasks.calculate-versions.results.cluster-app-chart-version)
+    - name: default-apps-chart-name
+      description: The name of the default-apps app used to build the WC
+      value: $(tasks.calculate-versions.results.default-apps-chart-name)
+    - name: default-apps-chart-version
+      description: The version of the default-apps app used to build the WC
+      value: $(tasks.calculate-versions.results.default-apps-chart-version)
+    - name: cluster-name
+      description: The name of the workload cluster
+      value: $(tasks.create-cluster.results.cluster-name)
+    - name: cluster-namespace
+      description: The namespace of the workload cluster
+      value: $(tasks.create-cluster.results.cluster-namespace)
+
+---

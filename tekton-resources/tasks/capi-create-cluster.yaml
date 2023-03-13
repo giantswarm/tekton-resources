@@ -1,0 +1,172 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: capi-create-cluster
+  labels:
+    application.giantswarm.io/team: team-tinkerers
+  annotations:
+    tekton.dev/tags: capi, workload-cluster
+    tekton.dev/displayName: "CAPI - Create cluster"
+spec:
+  description: Generates the cluster and default-apps manifests based on values provided and applies them to the MC
+
+  params:
+  # Required
+  - name: CLUSTER_APP_NAME
+    type: string
+    description: The name of the cluster app to use
+
+  - name: CLUSTER_APP_VERSION
+    type: string
+    description: The version of the cluster app to use
+
+  - name: DEFAULT_APPS_APP_NAME
+    type: string
+    description: The name of the default-apps app to use
+
+  - name: DEFAULT_APPS_APP_VERSION
+    type: string
+    description: The version of the default-apps app to use
+
+  - name: MC_KUBECONFIG_SECRET
+    type: string
+    description: The name of the Kubernetes secret containing the MCs kubeconfig file
+
+  # Optional
+  - name: CLUSTER_APP_CATALOG
+    type: string
+    description: The catalog of the cluster app
+    default: cluster
+
+  - name: DEFAULT_APPS_APP_CATALOG
+    type: string
+    description: The catalog of the default-apps app
+    default: cluster
+
+  - name: CLUSTER_NAME
+    type: string
+    description: The name of the cluster to use. If not provided one will be generated.
+    default: ""
+
+  - name: CLUSTER_NAMESPACE
+    type: string
+    description: The namespace on the MC that the cluster resources will be deployed to
+    default: "org-giantswarm"
+
+  - name: IMAGE
+    type: string
+    default: "quay.io/giantswarm/tinkerers-ci:latest"
+
+  volumes:
+    - name: app-manifests
+      emptyDir: {}
+    - name: kubeconfig
+      secret:
+        secretName: $(params.MC_KUBECONFIG_SECRET)
+
+  workspaces:
+    - name: values
+      description: |
+        A directory containing two values files: cluster-values.yaml and default-apps-values.yaml
+      readOnly: true
+
+    - name: kubeconfig
+      description: |
+        The directory where the workload cluster kubeconfig will be stored
+
+  results:
+    - name: cluster-name
+      description: The unique name of the cluster
+    - name: cluster-namespace
+      description: The namespace the cluster is deployed into
+
+  steps:
+    - name: template-apps
+      image: $(params.IMAGE)
+      env:
+        - name: CLUSTER_APP_NAME
+          value: $(params.CLUSTER_APP_NAME)
+        - name: CLUSTER_APP_VERSION
+          value: $(params.CLUSTER_APP_VERSION)
+        - name: CLUSTER_APP_CATALOG
+          value: $(params.CLUSTER_APP_CATALOG)
+        - name: DEFAULT_APPS_APP_NAME
+          value: $(params.DEFAULT_APPS_APP_NAME)
+        - name: DEFAULT_APPS_APP_VERSION
+          value: $(params.DEFAULT_APPS_APP_VERSION)
+        - name: DEFAULT_APPS_APP_CATALOG
+          value: $(params.DEFAULT_APPS_APP_CATALOG)
+        - name: CLUSTER_NAME
+          value: $(params.CLUSTER_NAME)
+        - name: CLUSTER_NAMESPACE
+          value: $(params.CLUSTER_NAMESPACE)
+      volumeMounts:
+        - name: app-manifests
+          mountPath: /mnt/app-manifests
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        CLUSTER_NAME=${CLUSTER_NAME:="t$(date +%s | cut -c7-10)"}
+
+        kubectl gs template app \
+          --app-name "${CLUSTER_NAME}" \
+          --name "${CLUSTER_APP_NAME}" \
+          --version "${CLUSTER_APP_VERSION}" \
+          --catalog "${CLUSTER_APP_CATALOG}" \
+          --target-namespace "${CLUSTER_NAMESPACE}" \
+          --in-cluster \
+          --user-configmap "$(workspaces.values.path)/cluster-values.yaml" \
+          > "/mnt/app-manifests/cluster.yaml"
+
+        # Fix the name of the ConfigMap
+        sed -i 's/-userconfig/-user-values/g' "/mnt/app-manifests/cluster.yaml"
+        # Add missing labels to ConfigMap
+        yq -i 'select(.kind == "ConfigMap").metadata.labels."giantswarm.io/cluster" = "'${CLUSTER_NAME}'"' "/mnt/app-manifests/cluster.yaml"
+
+        kubectl gs template app \
+            --app-name "${CLUSTER_NAME}-default-apps" \
+            --name "${DEFAULT_APPS_APP_NAME}" \
+            --version "v${DEFAULT_APPS_APP_VERSION}" \
+            --catalog "${DEFAULT_APPS_APP_CATALOG}" \
+            --target-namespace "${CLUSTER_NAMESPACE}" \
+            --in-cluster \
+            --cluster-name "${CLUSTER_NAME}" \
+            --user-configmap "$(workspaces.values.path)/default-apps-values.yaml" \
+          > "/mnt/app-manifests/default-apps.yaml"
+
+        # Fix the name of the ConfigMap
+        sed -i 's/-userconfig/-user-values/g' "/mnt/app-manifests/default-apps.yaml"
+        # Add missing labels to App
+        yq -i 'select(.kind == "App").metadata.labels."giantswarm.io/managed-by" = "cluster"' "/mnt/app-manifests/default-apps.yaml"
+        # Add cluster values as config
+        yq -i 'select(.kind == "App").spec.config.configMap.name = "'${CLUSTER_NAME}'-cluster-values"' "/mnt/app-manifests/default-apps.yaml"
+        yq -i 'select(.kind == "App").spec.config.configMap.namespace = "'${CLUSTER_NAMESPACE}'"' "/mnt/app-manifests/default-apps.yaml"
+
+        echo -n "${CLUSTER_NAME}" > $(results.cluster-name.path)
+        echo -n "${CLUSTER_NAMESPACE}" > $(results.cluster-namespace.path)
+
+    - name: apply-cluster-manifests
+      image: $(params.IMAGE)
+      env:
+        - name: CLUSTER_NAMESPACE
+          value: $(params.CLUSTER_NAMESPACE)
+      volumeMounts:
+        - name: app-manifests
+          mountPath: /mnt/app-manifests
+        - name: kubeconfig
+          mountPath: /etc/kubeconfig
+      script: |
+        #!/usr/bin/env bash
+        set -e
+
+        export KUBECONFIG=/etc/kubeconfig/kubeconfig
+
+        kubectl version
+
+        kubectl apply -f "/mnt/app-manifests/*.yaml"
+
+        CLUSTER_NAME=$(cat $(results.cluster-name.path))
+
+        while ! kubectl get secrets -n ${CLUSTER_NAMESPACE} ${CLUSTER_NAME}-kubeconfig; do echo "waiting for kubeconfig"; sleep 10; done
+        kubectl get secrets -n ${CLUSTER_NAMESPACE} ${CLUSTER_NAME}-kubeconfig -o jsonpath='{.data.value}' | base64 -d > $(workspaces.kubeconfig.path)/kubeconfig
